@@ -1,14 +1,13 @@
 var express = require('express');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var busboy = require('connect-busboy');
+var fs = require('fs-extra');
 
 var app = express();
 
-// create application/json parser
-var jsonParser = bodyParser.json()
-
 // create application/x-www-form-urlencoded parser
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
-
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
+app.use(busboy({ immediate: true }));
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -22,9 +21,15 @@ app.get('/', function(request, response) {
   response.render('pages/index');
 });
 
-app.post('/parse', urlencodedParser, function(req, res){
-  console.log(req.body);
-  res.send(req.body);
+app.post('/parse', urlencodedParser, function(req, res, next){
+  if (req.busboy) {
+    req.busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+      // ...
+    });
+  }
+  else {
+    res.send('meh');
+  }
 });
 
 app.listen(app.get('port'), function() {
