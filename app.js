@@ -24,7 +24,7 @@ app.get('/', function(request, response) {
 
 app.post('/parse', urlencodedParser, function(req, res){
   console.log(req.body);
-  res.send('parsing...');
+  res.send(req.body);
 });
 
 app.listen(app.get('port'), function() {
