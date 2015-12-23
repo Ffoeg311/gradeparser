@@ -1,13 +1,17 @@
 var express = require('express');
 var bodyParser = require('body-parser');
-var busboy = require('connect-busboy');
-var fs = require('fs-extra');
+var bb = require('express-busboy');
+
+path = require('path'),
+os = require('os'),
+fs = require('fs');
+
+var Busboy = require('busboy');
 
 var app = express();
 
 // create application/x-www-form-urlencoded parser
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
-app.use(busboy({ immediate: true }));
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -22,14 +26,28 @@ app.get('/', function(request, response) {
 });
 
 app.post('/parse', urlencodedParser, function(req, res, next){
-  if (req.busboy) {
-    req.busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-      // ...
+  var busboy = new Busboy({ headers: req.headers });
+  busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+    console.log('File [' + fieldname + ']: filename: ' + filename);
+    file.on('data', function(data) {
+      console.log('File [' + fieldname + '] got ' + data.length + ' bytes');
     });
-  }
-  else {
-    res.send('meh');
-  }
+    file.on('end', function() {
+      console.log('File [' + fieldname + '] Finished');
+    });
+  });
+
+  busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated) {
+    console.log('Field [' + fieldname + ']: value: ' + inspect(val));
+  });
+
+  busboy.on('finish', function() {
+    console.log('Done parsing form!');
+    res.writeHead(303, { Connection: 'close', Location: '/' });
+    res.end();
+  });
+  req.pipe(busboy);
+  return req.pipe(busboy);
 });
 
 app.listen(app.get('port'), function() {
