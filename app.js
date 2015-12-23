@@ -1,11 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
-
-path = require('path'),
-os = require('os'),
-fs = require('fs');
-
-var Busboy = require('busboy');
+var multer  = require('multer')
+var upload = multer({ dest: 'uploads/' })
 
 var app = express();
 
@@ -24,30 +20,10 @@ app.get('/', function(request, response) {
   response.render('pages/index');
 });
 
-app.post('/parse', urlencodedParser, function(req, res, next){
-  var busboy = new Busboy({ headers: req.headers });
-  busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-    console.log('File [' + fieldname + ']: filename: ' + filename);
-    file.on('data', function(data) {
-      console.log('File [' + fieldname + '] got ' + data.length + ' bytes');
-    });
-    file.on('end', function() {
-      console.log('File [' + fieldname + '] Finished');
-    });
-  });
-
-  busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated) {
-    console.log('Field [' + fieldname + ']: value: ' + inspect(val));
-  });
-
-  busboy.on('finish', function() {
-    console.log('Done parsing form!');
-    res.writeHead(303, { Connection: 'close', Location: '/' });
-    res.end();
-  });
-  req.pipe(busboy);
-  return req.pipe(busboy);
-});
+app.post('/parse', upload.single('fileurl'), function (req, res, next) {
+  console.log(req.file);
+  res.send("yay!");
+})
 
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
