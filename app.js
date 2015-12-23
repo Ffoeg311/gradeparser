@@ -1,7 +1,10 @@
 var express = require('express');
-var bodyParser = require('body-parser');
-var multer  = require('multer')
-var upload = multer({ dest: 'uploads/' })
+
+bodyParser = require('body-parser');
+multer  = require('multer')
+upload = multer({ dest: 'uploads/' })
+fs = require('fs');
+parse = require('csv-parse');
 
 var app = express();
 
@@ -16,15 +19,53 @@ app.use(express.static(__dirname + '/public'));
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
-app.get('/', function(request, response) {
-  response.render('pages/index');
+app.get('/', function(req, res) {
+  res.render('pages/index');
 });
 
 app.post('/parse', upload.single('fileurl'), function (req, res, next) {
-  console.log(req.file);
-  res.send("yay!");
+  var filePath = req.file.path;
+  function onNewRecord(record){ console.log(record) }
+
+  function onError(error){ console.log(error) }
+
+  function done(linesRead){ res.sendStatus(200) }
+
+  var columns = true;
+  parseCSVFile(filePath, columns, onNewRecord, onError, done);
+
 })
+
+function parseCSVFile(sourceFilePath, columns, onNewRecord, handleError, done) {
+  var source = fs.createReadStream(sourceFilePath);
+
+  var linesRead = 0;
+
+  var parser = parse({
+    delimiter: ',',
+    columns:columns
+  });
+
+  parser.on("readable", function(){
+    var record;
+    while (record = parser.read()) {
+      linesRead++;
+      onNewRecord(record);
+    }
+  });
+
+  parser.on("error", function(error){
+    handleError(error)
+  });
+
+  parser.on("end", function(){
+    done(linesRead);
+  });
+
+  source.pipe(parser);
+}
 
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
+
